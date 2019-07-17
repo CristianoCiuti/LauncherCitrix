@@ -1,0 +1,6 @@
+Manifest-Version: 1.0
+Built-By: a17u
+Build-Jdk: 1.8.0_211
+Created-By: Maven Integration for Eclipse
+Main-Class: com.gft.a17u.utils.LaunchCitrixCabel
+
