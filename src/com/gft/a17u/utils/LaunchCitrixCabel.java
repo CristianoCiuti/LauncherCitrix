@@ -4,10 +4,12 @@ import java.awt.Desktop;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Formatter;
 import java.util.List;
@@ -26,7 +28,10 @@ public class LaunchCitrixCabel {
 			for (Path p : FileSystems.getDefault().getRootDirectories())
 				if (p.toString().startsWith("C:"))
 					root = p;
-			// To get to the use home directory, get the first accessible, 4-character, starting with 'A' folder in Users
+			// Get the user home directory by looking at system properties
+			dir = Paths.get(System.getProperty("user.home"));
+			if (Files.notExists(dir))
+				throw new IllegalStateException("The directory specified in the user.home system property does not exist");
 			try (DirectoryStream<Path> ds = Files.newDirectoryStream(root.resolve("Users"), p -> {
 				return p.getFileName().toString().startsWith("A") && p.getFileName().toString().length() == 4;
 			})) {
@@ -38,6 +43,8 @@ public class LaunchCitrixCabel {
 				}
 			} catch (IOException ioe) {
 				throw new IOException("Could not find the user home folder", ioe);
+			} catch (NullPointerException npe) {
+				throw new IllegalStateException("The user.home system property has not been found", npe);
 			}
 			// Get the Downloads folder
 			dir = dir.resolve("Downloads");
@@ -62,7 +69,7 @@ public class LaunchCitrixCabel {
 			try {
 				citrixFile = fileList.get(0);
 			} catch (IndexOutOfBoundsException ioobe) {
-				throw new IllegalStateException("No ICA file found", ioobe);
+				throw new IllegalStateException("No ICA file found in the Downloads folder", ioobe);
 			}
 			
 			// Get the hosts file
@@ -106,11 +113,18 @@ public class LaunchCitrixCabel {
 				System.out.println("Could not open the new ICA file");
 			}
 		} catch (Exception e) {
+			e.printStackTrace();
+			// Write the error in a log file
+			try (PrintWriter pw = new PrintWriter(Files.newOutputStream(Paths.get(".").resolve("error.log")))) {
+				e.printStackTrace(pw);
+			} catch (IOException ioe) {
+				System.err.println("An error occured while trying to create the error log file");
+			}
+			// Show the error in a message dialog
 			try {
 				JOptionPane.showMessageDialog(null, e.getMessage(), "LaunchCitrixCabel - Error", JOptionPane.ERROR_MESSAGE);
 			} catch (Exception ee) {
 				System.err.println("An error occured while trying to display the error message");
-				System.err.println(e.getMessage());
 			}
 		}
 	}
