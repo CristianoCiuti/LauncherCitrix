@@ -1,5 +1,6 @@
 package com.gft.a17u.utils;
 
+import java.awt.BorderLayout;
 import java.awt.Desktop;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -14,7 +15,10 @@ import java.util.ArrayList;
 import java.util.Formatter;
 import java.util.List;
 
+import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.SwingConstants;
 
 public class LaunchCitrixCabel {
 
@@ -110,7 +114,7 @@ public class LaunchCitrixCabel {
 			try {
 				Desktop.getDesktop().open(citrixFile.toFile());
 			} catch (Exception e) {
-				System.out.println("Could not open the new ICA file");
+				throw new Exception("Could not open the new ICA file", e);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -119,14 +123,51 @@ public class LaunchCitrixCabel {
 				e.printStackTrace(pw);
 			} catch (IOException ioe) {
 				System.err.println("An error occured while trying to create the error log file");
+				ioe.printStackTrace();
 			}
 			// Show the error in a message dialog
 			try {
 				JOptionPane.showMessageDialog(null, e.getMessage(), "LaunchCitrixCabel - Error", JOptionPane.ERROR_MESSAGE);
 			} catch (Exception ee) {
 				System.err.println("An error occured while trying to display the error message");
+				ee.printStackTrace();
 			}
 		}
+		
+		// Display the window saying that the VM is starting
+		// This is all in a try block because it is entirely cosmetic
+		try {
+			final JFrame f = new JFrame();
+			f.setLayout(new BorderLayout());
+			f.setSize(680, 100);
+			f.setLocationRelativeTo(null);
+			f.setUndecorated(true);
+			final String base = "The connection to the remote desktop is being established";
+			String ext = "   ";
+			final JLabel l = new JLabel(base + ext, SwingConstants.CENTER);
+			l.setFont(l.getFont().deriveFont(20f));
+			f.add(l, BorderLayout.CENTER);
+			f.setVisible(true);
+			for (byte i = 0; i < 10; i++) {
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException e) {}
+				if (ext.charAt(2) == '.')
+					ext = "   ";
+				else
+					ext = ext.replaceFirst(" ", ".");
+				l.setText(base + ext);
+			}
+			try {
+				Thread.sleep(200);
+			} catch (InterruptedException e) {}
+			f.setVisible(false);
+			f.dispose();
+		} catch (Exception e) {
+			System.err.println("An error occured while trying to display the 'Opening...' message");
+			e.printStackTrace();
+		}
+		
 	}
 
 }
