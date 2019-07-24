@@ -26,6 +26,7 @@ public class LaunchCitrixCabel {
 		
 		Path root = null;
 		Path dir = null;
+		boolean success = true;
 		
 		try {
 			// Get the root C directory
@@ -117,6 +118,7 @@ public class LaunchCitrixCabel {
 				throw new Exception("Could not open the new ICA file", e);
 			}
 		} catch (Exception e) {
+			success = false;
 			e.printStackTrace();
 			// Write the error in a log file
 			try (PrintWriter pw = new PrintWriter(Files.newOutputStream(Paths.get(".").resolve("error.log")))) {
@@ -136,36 +138,38 @@ public class LaunchCitrixCabel {
 		
 		// Display the window saying that the VM is starting
 		// This is all in a try block because it is entirely cosmetic
-		try {
-			final JFrame f = new JFrame();
-			f.setLayout(new BorderLayout());
-			f.setSize(680, 100);
-			f.setLocationRelativeTo(null);
-			f.setUndecorated(true);
-			final String base = "The connection to the remote desktop is being established";
-			String ext = "   ";
-			final JLabel l = new JLabel(base + ext, SwingConstants.CENTER);
-			l.setFont(l.getFont().deriveFont(20f));
-			f.add(l, BorderLayout.CENTER);
-			f.setVisible(true);
-			for (byte i = 0; i < 10; i++) {
-				try {
-					Thread.sleep(500);
-				} catch (InterruptedException e) {}
-				if (ext.charAt(2) == '.')
-					ext = "   ";
-				else
-					ext = ext.replaceFirst(" ", ".");
-				l.setText(base + ext);
-			}
+		if (success) {
 			try {
-				Thread.sleep(200);
-			} catch (InterruptedException e) {}
-			f.setVisible(false);
-			f.dispose();
-		} catch (Exception e) {
-			System.err.println("An error occured while trying to display the 'Opening...' message");
-			e.printStackTrace();
+				final JFrame f = new JFrame();
+				f.setLayout(new BorderLayout());
+				f.setSize(680, 100);
+				f.setLocationRelativeTo(null);
+				f.setUndecorated(true);
+				final String base = "The connection to the remote desktop is being established";
+				String ext = "   ";
+				final JLabel l = new JLabel(base + ext, SwingConstants.CENTER);
+				l.setFont(l.getFont().deriveFont(20f));
+				f.add(l, BorderLayout.CENTER);
+				f.setVisible(true);
+				for (byte i = 0; i < 10; i++) {
+					try {
+						Thread.sleep(500);
+					} catch (InterruptedException e) {}
+					if (ext.charAt(2) == '.')
+						ext = "   ";
+					else
+						ext = ext.replaceFirst(" ", ".");
+					l.setText(base + ext);
+				}
+				try {
+					Thread.sleep(200);
+				} catch (InterruptedException e) {}
+				f.setVisible(false);
+				f.dispose();
+			} catch (Exception e) {
+				System.err.println("An error occured while trying to display the 'Opening...' message");
+				e.printStackTrace();
+			}
 		}
 		
 	}
