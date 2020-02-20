@@ -172,6 +172,16 @@ public class LaunchCitrixCabel {
 			}
 		}
 		
+		
+		// Delete the ICA files after a while
+		try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir, path -> {return path.toString().endsWith(".ica");})) {
+			try {
+				Thread.sleep(30000);
+			} catch (InterruptedException ie) {}
+			for (Path p : ds)
+				Files.delete(p);
+		} catch (IOException ioe) {}
+		
 	}
 
 }
