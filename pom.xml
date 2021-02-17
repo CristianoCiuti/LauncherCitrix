@@ -24,7 +24,7 @@
 		      <manifest>
 		        <addClasspath>true</addClasspath>
 		        <classpathPrefix>lib/</classpathPrefix>
-		        <mainClass>com.gft.a17u.utils.LaunchCitrixCabel</mainClass>
+		        <mainClass>com.gft.cristianociuti.LaunchCitrixCabel</mainClass>
 		      </manifest>
 		    </archive>
 		  </configuration>
