@@ -1,9 +1,7 @@
 package com.gft.cristianociuti;
 
 import java.awt.BorderLayout;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -19,20 +17,9 @@ import javax.swing.SwingConstants;
 import com.gft.cristianociuti.utils.ApplicationUtils;
 import com.gft.cristianociuti.utils.CitrixUtils;
 import com.gft.cristianociuti.utils.FileUtils;
+import com.gft.cristianociuti.utils.PropertyUtils;
 
 public class LaunchCitrixCabel {
-	
-	private static Properties readProperties() {
-		Properties prop = new Properties();
-		
-		try (InputStream input = new FileInputStream("config.properties")) {
-            prop.load(input);
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-		
-		return prop;
-	}
 	
 	private static void logException(Exception e) {
 		try (PrintWriter pw = new PrintWriter(Files.newOutputStream(Paths.get(".").resolve("error.log")))) {
@@ -98,7 +85,7 @@ public class LaunchCitrixCabel {
 
 	public static void main(String[] args) {
 		
-		Properties properties = readProperties();
+		Properties properties = PropertyUtils.readProperties("config.properties");
 		
 		System.out.println("==========PROPERTIES==========");
 		String rootPath = properties.getProperty("folder.root", "C:");
@@ -113,21 +100,14 @@ public class LaunchCitrixCabel {
 		Boolean waitViewer = properties.getProperty("utils.waitviewer", "true").compareToIgnoreCase("true") == 0;
 		System.out.println(String.format("Wait citrix viewer to open: %s", waitViewer.toString()));
 		
+		int waitingSecsClose = PropertyUtils.getPropertyInteger("utils.waitviewer.waitingsecs", properties, 60);
+		System.out.println(String.format("Waiting seconds after citrix viewer opened: %d", waitingSecsClose));
+		
 		Boolean delete = properties.getProperty("utils.autodelete", "true").compareToIgnoreCase("true") == 0;
 		System.out.println(String.format("Auto delete citrix files: %s", delete.toString()));
 		
-		int waitingSecs = 30;
-		if (delete) {
-			String waitingProp = properties.getProperty("utils.waitingsecs");
-			if (waitingProp != null)
-				try {
-					waitingSecs = Integer.parseInt(waitingProp);
-				}catch (Exception ex) {
-					System.err.println(String.format("User defined waiting seconds not valid: %s", waitingProp));
-				}
-			
-			System.out.println(String.format("Waiting seconds before deleting citrix files: %d", waitingSecs));
-		}
+		int waitingSecsDelete = PropertyUtils.getPropertyInteger("utils.autodelete.waitingsecs", properties, 30);
+		System.out.println(String.format("Waiting seconds before deleting citrix files: %d", waitingSecsDelete));
 		System.out.println("==============================");
 		
 		boolean success = true;
@@ -168,9 +148,28 @@ public class LaunchCitrixCabel {
 		
 		if (success) {
 			showOpeningMessage(citrixExe, waitViewer);
-			if (delete) 
-				CitrixUtils.deleteCitrixFiles(download, waitingSecs);
+			
+			Thread deleteThread = null, closeThread = null;
+			if (delete)
+				deleteThread = CitrixUtils.deleteCitrixFiles(download, waitingSecsDelete);
+			if (waitViewer)
+				closeThread = CitrixUtils.waitViewer(waitingSecsClose);
+			
+			try {
+				if (deleteThread != null)
+					deleteThread.join();
+				if (closeThread != null)
+					closeThread.join();
+			} catch (InterruptedException e) {
+				System.err.println("An error occured while waiting final threads");
+				e.printStackTrace();
+				System.exit(1);
+			}
+			
+			System.exit(0);
 		}
+		else
+			System.exit(1);
 		
 	}
 	

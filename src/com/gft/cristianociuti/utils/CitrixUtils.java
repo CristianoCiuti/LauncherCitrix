@@ -92,27 +92,53 @@ public class CitrixUtils {
 			throw new Exception(String.format("Could not open the new ICA file: %s", citrixFile.toAbsolutePath()), e);
 		}
 		System.out.println(String.format("Citrix file opened: %s", citrixFile.toAbsolutePath()));
-		
-		new Thread() {
-			public void run() {
-				try {
-					Thread.sleep(60 * 1000);
-					System.out.println("Stop waiting citrix viewer exe");
-				} catch (InterruptedException ignored) {}
-			}
-		}.start();
 	}
 	
-	public static void deleteCitrixFiles(Path dir, int waitingSecs) {
-		try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir, path -> {return path.toString().endsWith(".ica");})) {
-			try {
-				Thread.sleep(waitingSecs * 1000);
-			} catch (InterruptedException ie) {}
-			for (Path p : ds)
-				Files.delete(p);
-			System.out.println(String.format("Citrix files deleted from directory %s", dir.toAbsolutePath()));
-		} catch (IOException ioe) {
-			System.err.println(String.format("Could not delete citrix files from directory: %s", dir.toAbsolutePath()));
-		}
+	private static Thread waitThread(int waitingSecs) {
+		Thread thread = new Thread() {
+			public void run() {
+				try {
+					Thread.sleep(waitingSecs * 1000);
+				} catch (InterruptedException ignored) {}
+			}
+		};
+		thread.start();
+		return thread;
+	}
+	
+	public static Thread waitViewer(int waitingSecs) {
+		System.out.println(String.format("Waiting citrix viewer for %d secs", waitingSecs));
+		Thread waitThread = waitThread(waitingSecs);
+		Thread thread = new Thread() {
+			public void run() {
+				try {
+					waitThread.join();
+					System.out.println("Stop waiting citrix viewer");
+				} catch (InterruptedException ignored) {}
+			}
+		};
+		thread.start();
+		return thread;
+	}
+	
+	public static Thread deleteCitrixFiles(Path dir, int waitingSecs) {
+		System.out.println(String.format("Waiting file deletion for %d secs", waitingSecs));
+		Thread waitThread = waitThread(waitingSecs);
+		Thread thread = new Thread() {
+			public void run() {
+				try {
+					waitThread.join();
+					try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir, path -> {return path.toString().endsWith(".ica");})) {
+						for (Path p : ds)
+							Files.delete(p);
+						System.out.println(String.format("Citrix files deleted from directory %s", dir.toAbsolutePath()));
+					} catch (IOException ioe) {
+						System.err.println(String.format("Could not delete citrix files from directory: %s", dir.toAbsolutePath()));
+					}
+				} catch (InterruptedException ignored) {}
+			}
+		};
+		thread.start();
+		return thread;
 	}
 }
